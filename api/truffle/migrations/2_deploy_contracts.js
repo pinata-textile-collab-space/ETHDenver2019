@@ -1,5 +1,5 @@
-const Logger = artifacts.require("Logger");
+const Logger = artifacts.require("./Logger.sol");
 
 module.exports = function(deployer) {
-  deployer.deploy(Logger);
+    deployer.deploy(Logger);
 };
