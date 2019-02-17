@@ -4,7 +4,6 @@ import io
 import os
 import json
 from subprocess import Popen, PIPE
-from readability import Document
 import time
 import shutil
 
