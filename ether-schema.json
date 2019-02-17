@@ -1,0 +1,26 @@
+{
+  "name": "Ethereum API",
+  "pin": true,
+  "mill": "/json",
+  "plaintext": true,
+  "json_schema": {
+    "$id": "https://textile.io/ether.schema.json",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Ethereum API",
+    "type": "object",
+    "properties": {
+      "EventID": {
+        "type": "string"
+      },
+      "DataLink": {
+        "type": "string"
+      },
+      "DataLinkType": {
+        "type": "string"
+      },
+      "EventType": {
+        "type": "string"
+      }
+    }
+  }
+}

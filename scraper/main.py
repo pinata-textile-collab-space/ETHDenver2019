@@ -69,7 +69,7 @@ COLUMNS = ['GLOBALEVENTID',
  'DATEADDED',
  'SOURCEURL']
 
-THREAD_ID = "12D3KooWEWCJWvByS69g6ihozWxXdc6e5egyAaBCauRttQJ6kkzC"
+THREAD_ID = "12D3KooWJo51aEpftjXaNWnbGU8phUrM2888NgeXkmLEGHqLo1Wk"
 
 def add_single_event_to_thread(thread_id, event):
     p = Popen(["textile", "files", "add", "--thread", thread_id], stdout=PIPE, stdin=PIPE)
@@ -91,17 +91,22 @@ def archiveGdelt():
     raw_events = map(lambda row : row.split('\t'), str(contents).split('\n'))
     json_events = map(lambda event : dict(zip(COLUMNS, event)), raw_events)
 
-    # shutil.rmtree('tmp/', ignore_errors=True)
-    # os.mkdir('tmp/')
+    shutil.rmtree('tmp/', ignore_errors=True)
+    os.mkdir('tmp/')
+    count = 0
     for event in json_events:
         # with open('tmp/' + event['GLOBALEVENTID'] + '.json', 'w') as f:
         #     json.dump(event, f)
         add_single_event_to_thread(THREAD_ID, event)
-        print(event['GLOBALEVENTID'])
+        print("Publishing global event ID: " + event['GLOBALEVENTID'])
+        time.sleep(10)
+        # count += 1
+        # if count >= 25:
+        #     add_group_to_thread(THREAD_ID, 'tmp/')
+        #     print("Group added to thread " + THREAD_ID)
+        #     count = 0
 
-    # add_to_thread(THREAD_ID, 'tmp/')
-
-    # shutil.rmtree('tmp/')
+    shutil.rmtree('tmp/')
 
 if __name__ == "__main__":
     archiveGdelt()
