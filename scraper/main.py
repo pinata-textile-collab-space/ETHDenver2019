@@ -84,7 +84,7 @@ def archiveGdelt():
     filename = file.namelist()[0]
 
     contents = file.read(filename)
-    raw_events = map(lambda row : row.split('\t'), contents.split('\n'))
+    raw_events = map(lambda row : row.split('\t'), str(contents).split('\n'))
     json_events = map(lambda event : dict(zip(COLUMNS, event)), raw_events)
 
     shutil.rmtree('tmp/', ignore_errors=True)
