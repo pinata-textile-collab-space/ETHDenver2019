@@ -1,23 +1,27 @@
-require('dotenv').config();
+require('dotenv').config({ path: './api/.env' })
 const express = require('express');
+const ethers = require('ethers');
 const cors = require('cors');
+const bodyParser = require('body-parser');
 const app = express();
-const port = 3000;
+const port = 3002;
+const { Validator, ValidationError } = require('express-json-validator-middleware');
 
-//web3
 const Web3 = require('web3');
-const web3 = new Web3(new Web3.providers.HttpProvider(`https://kovan.infura.io/${process.env.INFURA_KEY}`));
-const signingAccount = web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY);
-const TruffleContract = require('truffle-contract');
-const Logger = require('./truffle/build/contracts/Logger.json');
-const LoggerContract = TruffleContract(Logger);
-if (typeof LoggerContract.currentProvider.sendAsync !== "function") {
-    LoggerContract.currentProvider.sendAsync = function() {
-        return LoggerContract.currentProvider.send.apply(
-            LoggerContract.currentProvider, arguments
-        );
-    };
-}
+
+let infuraProvider = new ethers.providers.InfuraProvider('kovan', process.env.INFURA_KEY);
+const build = require('./truffle/build/contracts/Logger.json');
+
+const abi = build.abi;
+const contractAddress = '0x074d32dCCad3E3dD9C383900dfdfbBA366861f6F';
+
+const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, infuraProvider);
+
+let contract = new ethers.Contract(contractAddress, abi, infuraProvider);
+
+const contractWithSigner = contract.connect(wallet);
+
+const web3 = new Web3(new Web3.providers.HttpProvider(`${process.env.INFURA_KEY}`));
 
 //initialize our JSON validator with all errors being shown
 const validator = new Validator({allErrors: true});
@@ -26,7 +30,7 @@ const validate = validator.validate;
 // Define a JSON Schema
 const JSONSchema = {
     type: 'object',
-    required: ['EventType', 'DataLink', 'DataLinkType', 'JSONData'],
+    required: ['EventType', 'DataLink', 'DataLinkType'],
     properties: {
         EventType: {
             type: 'string'
@@ -36,30 +40,17 @@ const JSONSchema = {
         },
         DataLinkType: {
             type: 'string'
-        },
-        JSONData: {
-            type: 'object'
         }
     }
 };
 
 app.use(cors());
+app.use(bodyParser.json({limit: '200mb'}));
 
 app.get('/', (req, res) => res.send('Hello World!'));
 
-app.post('/postNewHashToETH', validate({ body: JSONSchema }), function(req, res) {
+app.post('/postNewHashToETH', validate({ body: JSONSchema }), async function(req, res) {
    const jsonBody = req.body;
-
-    if(jsonBody.EventId) {
-        if(jsonBody.EventId.length > 32 || !isAlphanumeric(jsonBody.EventId)) {
-            return res.status(400).json({
-                error: `EventId must be less than or equal to 32 alpha-numeric characters in length`
-            });
-        }
-    } else {
-        //generate a random 32 length alpha-numeric string to use as the EventId
-        jsonBody.EventId = crypto.randomBytes(32).toString('hex');
-    }
 
     jsonBody.timeStamp = Date.now();
 
@@ -69,47 +60,29 @@ app.post('/postNewHashToETH', validate({ body: JSONSchema }), function(req, res)
         });
     }
 
-    LoggerContract.deployed().then( function(instance) {
-        const theContract = new web3.eth.Contract(instance.abi, instance.address);
+    const eventId = web3.utils.asciiToHex(req.body.EventId);
+    const eventType = web3.utils.asciiToHex(req.body.EventType);
+    const dataLink = req.body.DataLink; //the ipfs hash
+    const dataLinkType = web3.utils.asciiToHex(req.body.DataLinkType);
 
-        const eventId = web3.utils.asciiToHex(req.body.EventId);
-        const eventType = web3.utils.asciiToHex(req.body.EventType);
-        const dataLink = req.body.DataLink; //the ipfs hash
-        const dataLinkType = web3.utils.asciiToHex(req.body.DataLinkType);
+    let tx = await contractWithSigner.recordEvent(eventId,eventType, dataLink, dataLinkType);
 
-        const payload = theContract.methods.recordEvent(eventId, eventType, dataLink, dataLinkType).encodeABI();
-        const transactionObject = {
-            from: signingAccount.address,
-            to: instance.address,
-            gas: 670000,
-            gasPrice: web3.utils.toWei("20","gwei"),
-            data: payload
-        };
-
-        web3.eth.accounts.signTransaction(transactionObject, signingAccount.privateKey).then((signedTransaction) => {
-            web3.eth.sendSignedTransaction(signedTransaction.rawTransaction).then(() => {
-                return res.status(200).json({
-                    eventEmitted: {
-                        EventSource: signingAccount.address,
-                        EventId: jsonBody.EventId,
-                        EventType: jsonBody.EventType,
-                        DataLink: jsonBody.DataLink,
-                        DataLinkType: jsonBody.DataLinkType,
-                        TimeStamp: jsonBody.timeStamp
-                    }
-                });
-            }).catch((error) => {
-                return res.status(400).json({
-                    error: `${error}`
-                });
-            })
-        }).catch((error) => {
-            return res.status(400).json({
-                error: `${error}`
-            });
+    tx.wait().then(() => {
+        return res.status(200).json({
+            eventEmitted: {
+                EventSource: wallet.address,
+                EventId: jsonBody.EventId,
+                EventType: jsonBody.EventType,
+                DataLink: jsonBody.DataLink,
+                DataLinkType: jsonBody.DataLinkType,
+                TimeStamp: jsonBody.timeStamp
+            }
         });
-    });
-
+    }).catch((err) => {
+        return res.status(400).json({
+            error: err
+        });
+   });
 });
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`));

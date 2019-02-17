@@ -9,8 +9,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "body-parser": "^1.18.3",
     "cors": "^2.8.5",
     "dotenv": "^6.2.0",
+    "ethers": "^4.0.25",
     "express": "^4.16.4",
     "express-json-validator-middleware": "^1.2.3",
     "require-from-string": "^2.0.2",

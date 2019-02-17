@@ -6,13 +6,13 @@ contract Logger {
 
     event LoggerEvent(
         address indexed EventSource,
-        bytes32 indexed EventId,
+        uint256 indexed EventId,
         bytes32 indexed EventType,
         string  DataLink,
         bytes32 DataLinkType
     );
 
-    function recordEvent(bytes32 _eventId, bytes32 _eventType, string memory _dataLink, bytes32 _dataLinkType) public returns(bool) {
+    function recordEvent(uint256 _eventId, bytes32 _eventType, string memory _dataLink, bytes32 _dataLinkType) public returns(bool) {
         emit LoggerEvent(msg.sender, _eventId, _eventType, _dataLink, _dataLinkType);
         return true;
     }
