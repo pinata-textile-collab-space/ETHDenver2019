@@ -69,7 +69,7 @@ COLUMNS = ['GLOBALEVENTID',
  'DATEADDED',
  'SOURCEURL']
 
-THREAD_ID = "12D3KooWD3tiGA4jZ2iNHP58KkNFdnzYL32wLmoAQy7opYppj1Bc"
+THREAD_ID = "12D3KooWEWCJWvByS69g6ihozWxXdc6e5egyAaBCauRttQJ6kkzC"
 
 def add_to_thread(thread_id, filename):
     p = Popen(["textile", "files", "add", "--thread", thread_id, "--group", filename], stdout=PIPE)
