@@ -1,7 +1,12 @@
 import requests
 import zipfile
 import io
+import os
 import json
+from subprocess import Popen, PIPE
+from readability import Document
+import time
+import shutil
 
 COLUMNS = ['GLOBALEVENTID',
  'SQLDATE',
@@ -65,15 +70,32 @@ COLUMNS = ['GLOBALEVENTID',
  'DATEADDED',
  'SOURCEURL']
 
-last_update_resp = requests.get('http://data.gdeltproject.org/gdeltv2/lastupdate.txt')
-last_update_events_url = last_update_resp.text.split('\n')[0].split(' ')[2]
+def add_to_thread(thread_id, filename):
+    p = Popen(["textile", "files", "add", "--thread", thread_id, "--group", filename], stdout=PIPE)
+    p.communicate()[0]
 
+def archiveGdelt():
+    last_update_resp = requests.get('http://data.gdeltproject.org/gdeltv2/lastupdate.txt')
+    last_update_events_url = last_update_resp.text.split('\n')[0].split(' ')[2]
 
-last_update_events_zip = requests.get(last_update_events_url)
-file = zipfile.ZipFile(io.BytesIO(last_update_events_zip.content))
+    last_update_events_zip = requests.get(last_update_events_url)
+    file = zipfile.ZipFile(io.BytesIO(last_update_events_zip.content))
+    filename = file.namelist()[0]
 
-contents = file.read(file.namelist()[0])
-events = map(lambda row : row.split('\t'), contents.split('\n'))
+    contents = file.read(filename)
+    raw_events = map(lambda row : row.split('\t'), contents.split('\n'))
+    json_events = map(lambda event : dict(zip(COLUMNS, event)), raw_events)
 
-json_events = map(lambda event : json.dumps(dict(zip(COLUMNS, event))), events)
-print(json_events[0])
+    shutil.rmtree('tmp/', ignore_errors=True)
+    os.mkdir('tmp/')
+    for event in json_events:
+        with open('tmp/' + event['GLOBALEVENTID'] + '.json', 'w') as f:
+            json.dump(event, f)
+        print(event['GLOBALEVENTID'])
+
+    add_to_thread("12D3KooWJo51aEpftjXaNWnbGU8phUrM2888NgeXkmLEGHqLo1Wk", 'tmp/')
+
+    shutil.rmtree('tmp/')
+
+if __name__ == "__main__":
+    archiveGdelt()
