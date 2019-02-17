@@ -71,7 +71,11 @@ COLUMNS = ['GLOBALEVENTID',
 
 THREAD_ID = "12D3KooWEWCJWvByS69g6ihozWxXdc6e5egyAaBCauRttQJ6kkzC"
 
-def add_to_thread(thread_id, filename):
+def add_single_event_to_thread(thread_id, event):
+    p = Popen(["textile", "files", "add", "--thread", thread_id], stdout=PIPE, stdin=PIPE)
+    p.communicate(input=json.dumps(event))[0]
+
+def add_group_to_thread(thread_id, filename):
     p = Popen(["textile", "files", "add", "--thread", thread_id, "--group", filename], stdout=PIPE)
     p.communicate()[0]
 
@@ -87,16 +91,17 @@ def archiveGdelt():
     raw_events = map(lambda row : row.split('\t'), str(contents).split('\n'))
     json_events = map(lambda event : dict(zip(COLUMNS, event)), raw_events)
 
-    shutil.rmtree('tmp/', ignore_errors=True)
-    os.mkdir('tmp/')
+    # shutil.rmtree('tmp/', ignore_errors=True)
+    # os.mkdir('tmp/')
     for event in json_events:
-        with open('tmp/' + event['GLOBALEVENTID'] + '.json', 'w') as f:
-            json.dump(event, f)
+        # with open('tmp/' + event['GLOBALEVENTID'] + '.json', 'w') as f:
+        #     json.dump(event, f)
+        add_single_event_to_thread(THREAD_ID, event)
         print(event['GLOBALEVENTID'])
 
-    add_to_thread(THREAD_ID, 'tmp/')
+    # add_to_thread(THREAD_ID, 'tmp/')
 
-    shutil.rmtree('tmp/')
+    # shutil.rmtree('tmp/')
 
 if __name__ == "__main__":
     archiveGdelt()
