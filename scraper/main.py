@@ -70,6 +70,8 @@ COLUMNS = ['GLOBALEVENTID',
  'DATEADDED',
  'SOURCEURL']
 
+THREAD_ID = "12D3KooWJo51aEpftjXaNWnbGU8phUrM2888NgeXkmLEGHqLo1Wk"
+
 def add_to_thread(thread_id, filename):
     p = Popen(["textile", "files", "add", "--thread", thread_id, "--group", filename], stdout=PIPE)
     p.communicate()[0]
@@ -93,7 +95,7 @@ def archiveGdelt():
             json.dump(event, f)
         print(event['GLOBALEVENTID'])
 
-    add_to_thread("12D3KooWJo51aEpftjXaNWnbGU8phUrM2888NgeXkmLEGHqLo1Wk", 'tmp/')
+    add_to_thread(THREAD_ID, 'tmp/')
 
     shutil.rmtree('tmp/')
 
